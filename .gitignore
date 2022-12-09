@@ -1,0 +1,6 @@
+# IDEA
+.idea/
+*.iml
+
+# Composer
+src/vendor/
