@@ -1,13 +1,16 @@
-// First CLI window
+### First CLI window
 
+```
 docker-compose up -d
 docker-compose exec app composer install
 docker-compose exec app rr serve -c .rr.dev.yaml
+```
 
-
-// Second CLI window
+### Second CLI window
+```
 docker-compose exec app watch -n1 php trigger.php
-
+```
+-------
 
 Open prometheus (UI: http://localhost:3000)
 1. Add datasource - http://prometheus:9090
