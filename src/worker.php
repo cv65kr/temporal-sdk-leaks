@@ -6,7 +6,7 @@ use App\Activity;
 
 require './vendor/autoload.php';
 
-$factory = WorkerFactory::create();
+$factory = WorkerFactory::create(new \App\Converter());
 
 // Worker that listens on a task queue and hosts both workflow and activity implementations.
 $worker = $factory->newWorker();

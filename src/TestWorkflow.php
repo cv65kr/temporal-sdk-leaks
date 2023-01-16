@@ -11,15 +11,11 @@ use Carbon\CarbonInterval;
 use Temporal\Common\RetryOptions;
 use Temporal\Internal\Workflow\ActivityProxy;
 use Temporal\Workflow;
-use DateInterval;
 
 #[WorkflowInterface]
 class TestWorkflow
 {
     private Activity|ActivityProxy $activity;
-
-    private bool $finalStatus = false;
-    private bool $received = false;
 
     public function __construct()
     {
@@ -34,14 +30,16 @@ class TestWorkflow
     #[WorkflowMethod]
     public function start(): iterable
     {
-        while (!$this->finalStatus) {
-            yield Workflow::awaitWithTimeout(
-                DateInterval::createFromDateString('1 minute'),
-                fn() => $this->received
-            );
-
-            $this->received = false;
-            $this->finalStatus = yield $this->activity->execute();
-        }
+        yield $this->activity->execute(
+            new Example(
+                Enum::TEST,
+                new ObjectA(
+                    [
+                        'key' => 'xxxxx'
+                    ],
+                    'dasdasdasdasdasdasdasdasdasdasdasdsadsadasdasdasdasdasdasdasd'
+                )
+            )
+        );
     }
 }

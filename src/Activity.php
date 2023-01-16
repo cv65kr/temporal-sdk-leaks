@@ -11,8 +11,18 @@ use Temporal\Activity\ActivityMethod;
 final class Activity
 {
     #[ActivityMethod]
-    public function execute(): bool
+    public function execute(Example $example): Example
     {
-        return true;
+        return new Example(
+            new ObjectA(
+                [
+                    'test' => 'dsada',
+                    'test1' => 'dsada',
+                    'test2' => 'dsada',
+                    'test3' => 'dsada',
+                ],
+                'dasdsadsadsd'
+            )
+        );
     }
 }
