@@ -1,6 +1,6 @@
 {
   "require": {
-    "temporal/sdk": "^2.3"
+    "temporal/sdk": "^2.4"
   },
   "autoload": {
     "psr-4": {

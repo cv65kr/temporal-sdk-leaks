@@ -11,6 +11,12 @@ use Temporal\Activity\ActivityMethod;
 final class Activity
 {
     #[ActivityMethod]
+    public function composeGreeting(ObjectA $objectA, int $pollCount): bool
+    {
+        return $pollCount === 2;
+    }
+
+    #[ActivityMethod]
     public function execute(): bool
     {
         return true;

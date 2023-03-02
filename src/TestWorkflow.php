@@ -11,37 +11,75 @@ use Carbon\CarbonInterval;
 use Temporal\Common\RetryOptions;
 use Temporal\Internal\Workflow\ActivityProxy;
 use Temporal\Workflow;
-use DateInterval;
+use Temporal\Exception\Failure\CanceledFailure;
+use Temporal\Activity\ActivityCancellationType;
 
 #[WorkflowInterface]
 class TestWorkflow
 {
-    private Activity|ActivityProxy $activity;
+    private Activity|ActivityProxy $greetingActivity;
 
-    private bool $finalStatus = false;
-    private bool $received = false;
+    private bool $status = false;
+    private bool $polledStatus = false;
+
 
     public function __construct()
     {
-        $this->activity = Workflow::newActivityStub(
+        $this->greetingActivity = Workflow::newActivityStub(
             Activity::class,
             ActivityOptions::new()
-                ->withStartToCloseTimeout(CarbonInterval::minute())
-                ->withRetryOptions(RetryOptions::new()->withMaximumAttempts(1))
+                ->withStartToCloseTimeout(CarbonInterval::minutes(3))
+                ->withHeartbeatTimeout(CarbonInterval::minutes(3))
+                ->withRetryOptions(RetryOptions::new()->withMaximumAttempts(0))
+                ->withCancellationType(ActivityCancellationType::WAIT_CANCELLATION_COMPLETED)
         );
     }
 
-    #[WorkflowMethod]
-    public function start(): iterable
+    #[Workflow\SignalMethod]
+    public function setStatus(bool $status): void
     {
-        while (!$this->finalStatus) {
-            yield Workflow::awaitWithTimeout(
-                DateInterval::createFromDateString('1 minute'),
-                fn() => $this->received
-            );
+        $this->status = $status;
+    }
 
-            $this->received = false;
-            $this->finalStatus = yield $this->activity->execute();
+    #[WorkflowMethod]
+    public function start(ObjectA $test): iterable
+    {
+        $pollingStatusScope = Workflow::async(
+            function () use($test): iterable {
+                $pollCount = 0;
+                while (true) {
+                    ++$pollCount;
+                    $polledStatus = yield $this->greetingActivity->composeGreeting($test, $pollCount);
+                    if ($polledStatus) {
+                        $this->polledStatus = $polledStatus;
+                        return;
+                    }
+
+                    yield Workflow::timer(
+                        CarbonInterval::seconds(5)
+                    );
+                }
+            }
+        );
+
+        Workflow::async(
+            function () use ($pollingStatusScope): iterable {
+                yield Workflow::await(fn () => false !== $this->status  || false !== $this->polledStatus);
+
+                // To avoid race condition with cancelling
+                yield Workflow::timer(CarbonInterval::seconds(3));
+
+
+                // If the condition was successful the first coroutine is cancelled (we stop polling from activity)
+                $pollingStatusScope->cancel();
+            }
+        );
+
+        try {
+            yield $pollingStatusScope;
+        } catch (CanceledFailure $exception) {
+
         }
+
     }
 }
